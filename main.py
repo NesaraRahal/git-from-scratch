@@ -60,6 +60,27 @@ def main():
             with open(file_path, "wb") as hash_save:
                 compressed = zlib.compress(before_hash)
                 hash_save.write(compressed)
+    elif command == "ls-tree":
+        if len(sys.argv) > 3 and sys.argv[2] == "--name-only":
+            print(sys.argv[3])
+            tree_hash = sys.argv[3]
+            folder_name = tree_hash[:2]
+            file_name = tree_hash[2:]
+
+            tree_path = os.path.join(".git", "objects", folder_name, file_name)
+
+            with open(tree_path, "rb") as tree:
+                data = tree.read()
+
+            decompressed_tree = zlib.decompress(data)
+            
+
+            tree_null_byte = decompressed_tree.find(b'\x00')
+            actual_tree_content = decompressed_tree[tree_null_byte+1:]
+
+            print(actual_tree_content)
+        else:
+            raise RuntimeError(f"Unknown command #--name-only")
 
     else:
         raise RuntimeError(f"Unknown command #{command}")
