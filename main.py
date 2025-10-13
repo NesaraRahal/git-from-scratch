@@ -78,6 +78,28 @@ def main():
             tree_null_byte = decompressed_tree.find(b'\x00')
             actual_tree_content = decompressed_tree[tree_null_byte+1:]
 
+            position = 0
+
+            while(position < len(actual_tree_content)):
+
+                #File type
+                space_index = actual_tree_content.find(b' ', position)
+                file_type = actual_tree_content[position:space_index].decode()
+ 
+                # File Name
+                null_index = actual_tree_content.find(b'\x00', space_index)
+                file_name = actual_tree_content[space_index+1:null_index].decode()
+
+                #Sha1 Hash
+                sha1_start = null_index + 1 
+                sha1_end = sha1_start + 20
+
+                sha_binary = actual_tree_content[sha1_start:sha1_end]
+                sha_hex = sha_binary.hex()
+
+                print(sha_hex)
+                
+
             print(actual_tree_content)
         else:
             raise RuntimeError(f"Unknown command #--name-only")
