@@ -61,9 +61,13 @@ def main():
                 compressed = zlib.compress(before_hash)
                 hash_save.write(compressed)
     elif command == "ls-tree":
-        if len(sys.argv) > 3 and sys.argv[2] == "--name-only":
-            print(sys.argv[3])
-            tree_hash = sys.argv[3]
+        if len(sys.argv) >= 3: 
+            
+            if sys.argv[2] == "--name-only":
+                tree_hash = sys.argv[3]
+            else:
+                tree_hash = sys.argv[2]
+
             folder_name = tree_hash[:2]
             file_name = tree_hash[2:]
 
@@ -73,34 +77,57 @@ def main():
                 data = tree.read()
 
             decompressed_tree = zlib.decompress(data)
+
+            print(decompressed_tree)
             
 
             tree_null_byte = decompressed_tree.find(b'\x00')
             actual_tree_content = decompressed_tree[tree_null_byte+1:]
+            
 
             position = 0
 
-            while(position < len(actual_tree_content)):
+            if len(sys.argv)>3 and sys.argv[2] == "--name-only":
+            #ls-tree command with --name-only command
+                while(position < len(actual_tree_content)):
 
-                #File type
-                space_index = actual_tree_content.find(b' ', position)
-                file_type = actual_tree_content[position:space_index].decode()
- 
-                # File Name
-                null_index = actual_tree_content.find(b'\x00', space_index)
-                file_name = actual_tree_content[space_index+1:null_index].decode()
+                    space_index = actual_tree_content.find(b' ', position)
+    
+                    # File Name
+                    null_index = actual_tree_content.find(b'\x00', space_index)
+                    file_name = actual_tree_content[space_index+1:null_index].decode()
 
-                #Sha1 Hash
-                sha1_start = null_index + 1 
-                sha1_end = sha1_start + 20
+                    #Sha1 Hash
+                    sha1_start = null_index + 1 
+                    sha1_end = sha1_start + 20
 
-                sha_binary = actual_tree_content[sha1_start:sha1_end]
-                sha_hex = sha_binary.hex()
+                    print(file_name)
 
-                print(sha_hex)
-                
+                    position =  sha1_end 
+            
+            elif len(sys.argv) == 3 and sys.argv[2] != "--name-only":
+                #ls-tree command without --name-only
+            
+                while(position < len(actual_tree_content)):
 
-            print(actual_tree_content)
+                    #File type
+                    space_index = actual_tree_content.find(b' ', position)
+                    file_type = actual_tree_content[position:space_index].decode()
+    
+                    # File Name
+                    null_index = actual_tree_content.find(b'\x00', space_index)
+                    file_name = actual_tree_content[space_index+1:null_index].decode()
+
+                    #Sha1 Hash
+                    sha1_start = null_index + 1 
+                    sha1_end = sha1_start + 20
+
+                    sha_binary = actual_tree_content[sha1_start:sha1_end]
+                    sha_hex = sha_binary.hex()
+
+                    print(file_type, file_name, sha_hex)
+
+                    position =  sha1_end 
         else:
             raise RuntimeError(f"Unknown command #--name-only")
 
