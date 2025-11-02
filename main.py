@@ -2,7 +2,24 @@ import sys
 import os
 import zlib
 import hashlib
+from pathlib import Path
 
+
+
+def createTree(path):
+    for entry in path.iterdir():
+        if entry.is_file():
+            hashObj(entry);
+        elif entry.is_dir():
+            pass
+
+def hashObj(entry):
+    with open(entry, "rb") as f:
+            content = f.read()
+            header = f"blob {len(content)}\x00".encode()
+            before_hash = header + content
+            sha1_hash = hashlib.sha1(before_hash).hexdigest()
+            print(sha1_hash)
 
 
 def main():
@@ -126,14 +143,19 @@ def main():
                     sha_binary = actual_tree_content[sha1_start:sha1_end]
                     sha_hex = sha_binary.hex()
 
-                    print(file_type, file_type_text, file_name, sha_hex)
-
+                    print(f"{file_type} {file_type_text}\t{sha_hex}\t{file_name}")
+                    
                     position =  sha1_end 
         else:
             raise RuntimeError(f"Unknown command #--name-only")
-
+    elif command == "write-tree":
+        root = Path.cwd()
+        print(root)
+        createTree(root)
     else:
         raise RuntimeError(f"Unknown command #{command}")
+    
+    
 
 
 if __name__ == "__main__":
