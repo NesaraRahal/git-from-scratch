@@ -7,11 +7,35 @@ from pathlib import Path
 
 
 def createTree(path):
+
+    entries = []
+
     for entry in path.iterdir():
         if entry.is_file():
-            hashObj(entry);
+            sha1Hash = hashObj(entry)
+            entries.append(("100644", entry.name, sha1Hash))
+
         elif entry.is_dir():
-            pass
+            if(entry.name == ".git"):
+                continue
+            
+            subtree_sha1 = createTree(entry)
+            entries.append(("40000", entry.name, subtree_sha1))            
+
+            print(subtree_sha1)
+
+
+            #entries.append(createTree(entry))
+            #Tree object 
+    tree_content = b""
+    for mode, name, sha1 in entries:
+        tree_content += f"{mode} {name}\0".encode()
+        tree_content += bytes.fromhex(sha1)        
+
+    print(tree_content)
+    
+    return entries
+
 
 def hashObj(entry):
     with open(entry, "rb") as f:
@@ -20,6 +44,18 @@ def hashObj(entry):
             before_hash = header + content
             sha1_hash = hashlib.sha1(before_hash).hexdigest()
             print(sha1_hash)
+
+            folder_name = sha1_hash[0:2]
+            file_name = sha1_hash[2:]
+            path = os.path.join(".git", "objects", folder_name)
+            os.makedirs(path, exist_ok=True)
+
+            file_path = os.path.join(path, file_name)
+            with open(file_path, "wb") as hash_save:
+                compressed = zlib.compress(before_hash)
+                hash_save.write(compressed)
+
+            return sha1_hash
 
 
 def main():
@@ -150,8 +186,8 @@ def main():
             raise RuntimeError(f"Unknown command #--name-only")
     elif command == "write-tree":
         root = Path.cwd()
-        print(root)
-        createTree(root)
+        entries = createTree(root)
+       # print(entries)
     else:
         raise RuntimeError(f"Unknown command #{command}")
     
