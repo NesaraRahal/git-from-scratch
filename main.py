@@ -21,10 +21,6 @@ def createTree(path):
             
             subtree_sha1 = createTree(entry)
             entries.append(("40000", entry.name, subtree_sha1))            
-
-            print(subtree_sha1)
-
-
             #entries.append(createTree(entry))
             #Tree object 
     tree_content = b""
@@ -32,9 +28,23 @@ def createTree(path):
         tree_content += f"{mode} {name}\0".encode()
         tree_content += bytes.fromhex(sha1)        
 
-    print(tree_content)
+    header = f"tree {len(tree_content)}\x00".encode()
+    tree_obj = header + tree_content
+    sha1_tree_obj = hashlib.sha1(tree_obj).hexdigest()
+
+    folder_name = sha1_tree_obj[0:2]
+    file_name = sha1_tree_obj[2:]
+
+    path = os.path.join(".git", "objects", folder_name)
+    os.makedirs(path, exist_ok=True)
+
+    file_path = os.path.join(path, file_name)
+    with open(file_path, "wb") as hash_save_tree:
+        compressed = zlib.compress(tree_obj)
+        hash_save_tree.write(compressed)
+
     
-    return entries
+    return sha1_tree_obj
 
 
 def hashObj(entry):
@@ -43,7 +53,7 @@ def hashObj(entry):
             header = f"blob {len(content)}\x00".encode()
             before_hash = header + content
             sha1_hash = hashlib.sha1(before_hash).hexdigest()
-            print(sha1_hash)
+            #print(sha1_hash)
 
             folder_name = sha1_hash[0:2]
             file_name = sha1_hash[2:]
@@ -186,8 +196,8 @@ def main():
             raise RuntimeError(f"Unknown command #--name-only")
     elif command == "write-tree":
         root = Path.cwd()
-        entries = createTree(root)
-       # print(entries)
+        sha1_tree_obj = createTree(root)
+        print(sha1_tree_obj)
     else:
         raise RuntimeError(f"Unknown command #{command}")
     
