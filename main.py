@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 import zlib
 import hashlib
 from pathlib import Path
@@ -66,6 +67,17 @@ def hashObj(entry):
                 hash_save.write(compressed)
 
             return sha1_hash
+    
+def commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent_header, command_length):
+    if command_length >= 3:
+        tree_header = f"tree {tree_sha1}"
+        author_details = f"{author_name} <{author_email}> {timestamp} {timezone}"
+
+        if parent_header != None:
+            parent_header = f"parent {parent_header}"
+            print(parent_header)
+
+
 
 
 def main():
@@ -198,6 +210,31 @@ def main():
         root = Path.cwd()
         sha1_tree_obj = createTree(root)
         print(sha1_tree_obj)
+    elif command == "commit-tree":
+        if len(sys.argv) > 2 :
+               tree_sha1 = sys.argv[2]
+               
+               author_name = "Rahal"
+               author_email = "testemail@gmail.com"
+               timestamp = int(time.time())
+               timezone = "+0530"  
+
+               if sys.argv[3] == "-p" and sys.argv[4] != None:
+                    print(sys.argv[4])
+                    parent_header = sys.argv[4]
+               else:
+                    parent_header = None 
+
+               if sys.argv[5] == "-m" and sys.argv[6] != None or sys.argv[6] != "":
+                    print(sys.argv[6])
+                    
+               else:
+                    parent_header = None 
+
+
+               command_length = len(sys.argv)
+
+               commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent_header, command_length)
     else:
         raise RuntimeError(f"Unknown command #{command}")
     
