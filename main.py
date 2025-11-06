@@ -68,15 +68,41 @@ def hashObj(entry):
 
             return sha1_hash
     
-def commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent_header, command_length):
+def commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent_header, command_length, commit_msg ):
     if command_length >= 3:
         tree_header = f"tree {tree_sha1}"
+
+        line = [tree_header]
+
         author_details = f"{author_name} <{author_email}> {timestamp} {timezone}"
 
         if parent_header != None:
             parent_header = f"parent {parent_header}"
-            print(parent_header)
+            line.append(parent_header)
 
+        line.append(f"author {author_details}")
+        line.append(f"committer {author_details}")
+        line.append("")
+
+        if commit_msg != None or commit_msg != "":
+            line.append(commit_msg)
+
+        commit_content = "\n".join(line).encode()
+        commit_obj_header = f"commit {len(commit_content)}\x00".encode()
+        commit_content = commit_obj_header + commit_content
+
+        commit_content_sha1 =  hashlib.sha1(commit_content).hexdigest()
+        print(commit_content_sha1)
+
+        folder_name = commit_content_sha1[0:2]
+        file_name = commit_content_sha1[2:]
+        path = os.path.join(".git", "objects", folder_name)
+        os.makedirs(path, exist_ok=True)
+
+        file_path = os.path.join(path, file_name)
+        with open(file_path, "wb") as commit_save:
+            compressed = zlib.compress(commit_content)
+            commit_save.write(compressed)
 
 
 
@@ -226,15 +252,15 @@ def main():
                     parent_header = None 
 
                if sys.argv[5] == "-m" and sys.argv[6] != None or sys.argv[6] != "":
-                    print(sys.argv[6])
+                    commit_msg = sys.argv[6]
                     
                else:
-                    parent_header = None 
+                    commit_msg = None 
 
 
                command_length = len(sys.argv)
 
-               commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent_header, command_length)
+               commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent_header, command_length, commit_msg)
     else:
         raise RuntimeError(f"Unknown command #{command}")
     
