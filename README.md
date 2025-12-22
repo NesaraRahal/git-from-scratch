@@ -1,145 +1,106 @@
-Git From Scratch (Python)
 
 
-A learning-focused implementation of core Git internals written in Python.
-This project explores how Git stores data, represents objects, and creates commits by rebuilding essential mechanisms from scratch.
+# Git From Scratch (Python)
 
-Note: This is not a full Git replacement. The project is intended for understanding Git internals.
+A deep-dive, learning-focused implementation of core Git internals. This project explores how Git manages data integrity, represents file hierarchies, and creates immutable history by rebuilding essential mechanisms from the ground up.
 
-Overview
+> **Note:** This is a technical exploration of Git's architecture, not a full production replacement. It is designed to showcase the beauty of content-addressable storage.
 
-This implementation recreates key parts of Git’s internal design:
+---
 
-Content-addressable storage using SHA-1
+## 🏗️ The Git Object Model
 
-Blob, tree, and commit object formats
+This project implements the core "Plumbing" of Git. At its heart, Git is a simple key-value data store where the key is the SHA-1 hash of the content.
 
-zlib-compressed object storage under .git/objects
+### How it works:
 
-Minimal repository structure and object inspection
+1. **Blobs**: Store the raw file content (data).
+2. **Trees**: Act like directories, mapping filenames to Blobs or other Trees.
+3. **Commits**: Store snapshots (Trees) along with metadata like author, timestamp, and parent pointers.
 
-Supported Commands
-Initialize a repository
+---
+
+## 🚀 Supported Commands
+
+### Core Plumbing
+
+| Command | Description |
+| --- | --- |
+| `python main.py init` | Initializes the `.git` directory structure. |
+| `python main.py hash-object -w <file>` | Hashes a file and stores it as a compressed blob. |
+| `python main.py cat-file -p <sha>` | Decompresses and prints the contents of a stored object. |
+
+### Tree & History Management
+
+| Command | Description |
+| --- | --- |
+| `python main.py write-tree` | Recursively captures the current directory as a Tree object. |
+| `python main.py ls-tree <sha>` | Lists the contents of a tree (supports `--name-only`). |
+| `python main.py commit-tree <sha>` | Creates a commit object pointing to a tree with author metadata. |
+
+---
+
+## 🛠️ Quick Start Workflow
+
+Follow these steps to build your first manual commit:
+
+1. **Initialize the repository**
+```bash
 python main.py init
 
-Create and store a blob object
-python main.py hash-object -w <file>
+```
 
-Display the contents of an object
-python main.py cat-file -p <object_sha>
 
-Create a tree object
+2. **Hash and store content**
+```bash
+python main.py hash-object -w example.txt
+
+```
+
+
+3. **Snapshot the directory**
+```bash
 python main.py write-tree
+# Outputs a <tree_sha>
 
-List contents of a tree object
-python main.py ls-tree <tree_sha>
-python main.py ls-tree --name-only <tree_sha>
-
-Create a commit object
-python main.py commit-tree <tree_sha> -m "commit message"
-
-Clone (Work in Progress)
-python main.py clone <repo_path> [destination]
-
-Quick Start Example Workflow
-
-Follow these steps to see how the project works:
-
-Initialize a repository
-
-python main.py init
+```
 
 
-Creates .git directory structure.
-
-Create and store blob objects
-
-python main.py hash-object -w file1.txt
-python main.py hash-object -w file2.txt
-
-
-Generates SHA-1 hashes and stores the file contents as blobs.
-
-Create a tree object
-
-python main.py write-tree
-
-
-Generates a tree object representing the current directory.
-
-Create a commit
-
+4. **Create a commit**
+```bash
 python main.py commit-tree <tree_sha> -m "Initial commit"
 
-
-Creates a commit object pointing to the tree.
-
-Inspect objects
-
-python main.py cat-file -p <object_sha>
-python main.py ls-tree <tree_sha>
-
-
-Check contents of blobs, trees, and commits.
-
-Project Scope
-Implemented
-
-Blob object creation and storage
-
-Tree object generation with recursive directory traversal
-
-Commit object creation with optional parent linking
-
-Object inspection and tree listing
-
-Git-compatible object hashing and zlib compression
-
-Not implemented / Work in progress
-
-Clone 
-
-
-Key Learning Outcomes
-
-Git object model (blob, tree, commit)
-
-Content hashing and immutability
-
-Binary object encoding
-
-zlib compression
-
-Filesystem-based version control design
-
-Low-level understanding of Git internals
-
-Technologies Used
-
-Python 3
-
-hashlib
-
-zlib
-
-pathlib
+```
 
 
 
+---
 
+## 🧠 Technical Highlights & Learning Outcomes
 
-Project Structure
+* **Content-Addressable Storage**: Implemented Git’s unique hashing strategy where identical content results in the same SHA-1, preventing data duplication.
+* **Recursive Merkle Trees**: Developed a recursive directory walker to generate Tree objects, effectively replicating a filesystem hierarchy in a flat database.
+* **Binary Data Engineering**: Handled Git’s specific binary format, including null-byte delimiters (`\x00`) and 20-byte binary SHA-1 representations.
+* **Data Efficiency**: Implemented `zlib` compression to mirror Git’s disk-space management.
+* **Object Sharding**: Implemented the `2/38` character folder split (e.g., `.git/objects/a1/b2c3...`) to optimize filesystem performance for large object counts.
 
-main.py
+---
 
-.git/
+## 🚧 Roadmap
 
-objects/
+* [x] Recursive Tree Generation
+* [x] SHA-1 Integrity Hashing
+* [x] Commit History Linking
+* [ ] **In Progress:** Git Clone 
 
-refs/
+---
 
-HEAD
+## 💻 Technologies Used
 
-Author
+* **Python 3**: Core logic.
+* **Hashlib**: SHA-1 generation.
+* **Zlib**: Object compression.
+* **Pathlib**: Modern filesystem path management.
 
-Nesara Rahal
+**Author:** Nesara Rahal
+
