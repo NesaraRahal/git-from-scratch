@@ -84,7 +84,7 @@ def commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent
         line.append(f"committer {author_details}")
         line.append("")
 
-        if commit_msg != None or commit_msg != "":
+        if commit_msg:
             line.append(commit_msg)
 
         commit_content = "\n".join(line).encode()
@@ -261,11 +261,31 @@ def main():
                command_length = len(sys.argv)
 
                commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent_header, command_length, commit_msg)
+    elif command == "clone":
+
+        #Create the directory first
+        dir = Path(sys.argv[3]) if len(sys.argv) > 3 else Path.cwd()
+        print(dir)
+
+        dir.mkdir(parents=True, exist_ok=True)
+
+        git_dir = dir / ".git" 
+        git_objects = dir / ".git" / "objects"
+        git_refs = dir / ".git" / "refs"
+        git_head_dir = dir / ".git" / "HEAD"
+
+        os.mkdir(git_dir)
+        os.mkdir(git_objects)
+        os.mkdir(git_refs)
+        with open(git_head_dir, "w") as f:
+            f.write("ref: refs/heads/main\n")
+        print("Initialized git directory")
+        
+        print(sys.argv[2])    
     else:
         raise RuntimeError(f"Unknown command #{command}")
     
     
-
 
 if __name__ == "__main__":
     main()
