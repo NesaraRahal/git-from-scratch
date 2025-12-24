@@ -1,9 +1,14 @@
+import re
 import sys
 import os
 import time
 import zlib
 import hashlib
 from pathlib import Path
+
+#For git clone
+import requests
+
 
 
 
@@ -272,16 +277,50 @@ def main():
         git_dir = dir / ".git" 
         git_objects = dir / ".git" / "objects"
         git_refs = dir / ".git" / "refs"
-        git_head_dir = dir / ".git" / "HEAD"
+        git_head_file = dir / ".git" / "HEAD"
 
-        os.mkdir(git_dir)
-        os.mkdir(git_objects)
-        os.mkdir(git_refs)
-        with open(git_head_dir, "w") as f:
+        heads_dir = git_refs / "heads"
+
+        git_dir.mkdir(parents=True, exist_ok=True)
+        git_objects.mkdir(parents=True, exist_ok=True)
+        git_refs.mkdir(parents=True, exist_ok=True)
+        heads_dir.mkdir(parents=True, exist_ok=True)
+
+        (heads_dir / "main").write_text("")
+
+        with open(git_head_file, "w") as f:
             f.write("ref: refs/heads/main\n")
-        print("Initialized git directory")
+        print("Initialized git directory")  
+
+
+        repo_url = "https://github.com/NesaraRahal/git-from-scratch"
+        info_refs_url = f"{repo_url}/info/refs?service=git-upload-pack"
+
+        r = requests.get(info_refs_url)
+
+        #Parsing the response so we can extract refs and commite objects
+        data = r.content.decode()
+
+        lines = data.split('\n')
+
+        refs = {}
+
+        for line in lines:
+            if not line or line.startswith('001e') or line.startswith('0000') or line.startswith('#'):
+                continue
+            
+            #regex to find sha1 hashes
+            m = re.match(r'([0-9a-f]{40})\s+(.+)', line)
+            if m:
+                sha, ref = m.groups()
+                refs[ref] = sha
+
+            print(refs)
+
+        print(data)
+
+
         
-        print(sys.argv[2])    
     else:
         raise RuntimeError(f"Unknown command #{command}")
     
