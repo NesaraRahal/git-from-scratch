@@ -301,23 +301,34 @@ def main():
         #Parsing the response so we can extract refs and commite objects
         data = r.content.decode()
 
+        print(data)
+
         lines = data.split('\n')
 
         refs = {}
 
         for line in lines:
-            if not line or line.startswith('001e') or line.startswith('0000') or line.startswith('#'):
+            if not line or len(line) < 5:
                 continue
-            
-            #regex to find sha1 hashes
-            m = re.match(r'([0-9a-f]{40})\s+(.+)', line)
-            if m:
-                sha, ref = m.groups()
-                refs[ref] = sha
+
+            # remove pkt-line length
+            payload = line[4:]
+
+            # ignore service line
+            if payload.startswith('#'):
+                continue
+
+            # remove capabilities (after NULL byte)
+            payload = payload.split('\x00', 1)[0]
+
+            if ' ' not in payload:
+                continue
+
+            sha, ref = payload.split(' ', 1)
+            refs[ref] = sha
 
             print(refs)
 
-        print(data)
 
 
         
