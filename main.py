@@ -109,6 +109,10 @@ def commitTree(author_name, author_email, timestamp, timezone, tree_sha1, parent
             compressed = zlib.compress(commit_content)
             commit_save.write(compressed)
 
+#Helper function - pkt-line encoder
+def pkt_line(data):
+    length = len(data) + 4
+    return f"{length:04x}{data}"
 
 
 def main():
@@ -301,7 +305,7 @@ def main():
         #Parsing the response so we can extract refs and commite objects
         data = r.content.decode()
 
-        print(data)
+        #print(data)
 
         lines = data.split('\n')
 
@@ -327,9 +331,34 @@ def main():
             sha, ref = payload.split(' ', 1)
             refs[ref] = sha
 
-            print(refs)
+        print(refs)  
 
 
+        #Main branch to build an upload-pack request 
+        commit_sha = refs.get("refs/heads/main")
+
+        want_line = f"want {commit_sha}\n"
+        encoded_want_line = pkt_line(want_line)
+
+        done_line = f"done\n"
+        encoded_done_line = pkt_line(done_line)
+
+        body = encoded_want_line + encoded_done_line
+
+        upload_pack_url = f"{repo_url}/git-upload-pack" 
+
+        headers = {
+            "Content-Type": "application/x-git-upload-pack-request",
+            "Accept": "application/x-git-upload-pack-result",
+        }
+
+        response = requests.post(
+            upload_pack_url,
+            data=body.encode(),
+            headers=headers
+        )
+
+        print(response)
 
         
     else:
