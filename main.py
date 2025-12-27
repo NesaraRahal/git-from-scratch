@@ -300,7 +300,7 @@ def main():
         repo_url = "https://github.com/NesaraRahal/git-from-scratch"
         info_refs_url = f"{repo_url}/info/refs?service=git-upload-pack"
 
-        r = requests.get(info_refs_url)
+        r = requests.get(info_refs_url, headers={"User-Agent": "git/2.0"})
 
         #Parsing the response so we can extract refs and commite objects
         data = r.content.decode()
@@ -345,11 +345,23 @@ def main():
 
         body = encoded_want_line + encoded_done_line
 
-        upload_pack_url = f"{repo_url}/git-upload-pack" 
+
+        upd_url = f"{repo_url}.git"   
+        upload_pack_url = f"{upd_url}/git-upload-pack" 
+
+        body = (
+            encoded_want_line +
+            "0000" +           # flush-pkt
+            encoded_done_line
+        )
+
+        print(body)
+
 
         headers = {
             "Content-Type": "application/x-git-upload-pack-request",
             "Accept": "application/x-git-upload-pack-result",
+            "User-Agent": "git/2.0",
         }
 
         response = requests.post(
@@ -358,8 +370,28 @@ def main():
             headers=headers
         )
 
-        print(response)
 
+
+        # Strip pkt-line framing
+
+        raw = response.content
+        i = 0
+
+        while True:
+            if raw[i:i+4] == b'PACK':
+                pack_data = raw[i:]
+                break
+
+            length = int(raw[i:i+4], 16)
+            i += 4
+
+            if length == 0:
+                continue  # flush pkt-line
+
+            payload = raw[i:i+length-4]
+            i += length - 4
+
+        print(pack_data[:32])
         
     else:
         raise RuntimeError(f"Unknown command #{command}")
