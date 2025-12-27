@@ -8,7 +8,7 @@ from pathlib import Path
 
 #For git clone
 import requests
-
+import struct
 
 
 
@@ -115,11 +115,30 @@ def pkt_line(data):
     return f"{length:04x}{data}"
 
 
+def read_object_header(offset, data):
+    c = data[offset]
+    offset += 1
+
+    obj_type = (c >> 4) & 0x07
+
+    size = c & 0x0f
+    shift = 4  
+
+    while c & 0x80:  # if continuation bit is set
+        c = data[offset]
+        offset += 1
+        size |= (c & 0x7f) << shift 
+        shift += 7
+
+ 
+    return obj_type, size, offset
+
+
+
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!", file=sys.stderr)
 
-    # Uncomment this block to pass the first stage
     
     command = sys.argv[1]
     if command == "init":
@@ -392,8 +411,30 @@ def main():
             i += length - 4
 
         print(pack_data[:32])
+
+
+        #Read pack header
+
+        header_data = pack_data
+        offset = 0
+
+        assert header_data[:4] == b'PACK'
+        offset += 4
+
+        #Big Endian Order bytes to unsigned 32 bit int
+        version = struct.unpack(">I", header_data[offset:offset+4])[0]
+
+        offset += 4
         
-    else:
+        object_count = struct.unpack(">I", header_data[offset:offset+4])[0]
+
+        offset += 4
+
+        #Parsing object header
+        obj_type, size, offset = read_object_header(offset, header_data)
+        print(obj_type, size, offset)
+        
+    else:   
         raise RuntimeError(f"Unknown command #{command}")
     
     
