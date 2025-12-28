@@ -119,12 +119,26 @@ def read_object_header(offset, data):
     c = data[offset]
     offset += 1
 
-    obj_type = (c >> 4) & 0x07
+    #header layout for reference
 
-    size = c & 0x0f
+    # bit:  7   6   5   4   3   2   1   0
+    #   ─────────────────────────────────
+    #       C   T   T   T   S   S   S   S
+
+    # Bits 0–3 → size (low 4 bits)
+    # Bits 4–6 → type
+    # Bit 7 → continuation
+
+    #Get the type
+    obj_type = (c >> 4) & 0x07 # 0x07= 00000111 in binary
+
+    #Get the size
+    size = c & 0x0f  #  00000111 in binary
+
     shift = 4  
 
-    while c & 0x80:  # if continuation bit is set
+    #If conitnuation bit is exit then we need to read other remaining size bits int other bytes
+    while c & 0x80:  # 0x80 ==  10000000 in binary
         c = data[offset]
         offset += 1
         size |= (c & 0x7f) << shift 
@@ -427,6 +441,8 @@ def main():
         offset += 4
         
         object_count = struct.unpack(">I", header_data[offset:offset+4])[0]
+
+        print(version, object_count)
 
         offset += 4
 
