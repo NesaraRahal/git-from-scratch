@@ -135,13 +135,23 @@ def read_object_header(offset, data):
     #Get the size
     size = c & 0x0f  #  00000111 in binary
 
+
     shift = 4  
 
-    #If conitnuation bit is exit then we need to read other remaining size bits int other bytes
+    #If conitnuation bit is exit then we need to read other remaining size bits in other bytes
     while c & 0x80:  # 0x80 ==  10000000 in binary
         c = data[offset]
         offset += 1
-        size |= (c & 0x7f) << shift 
+
+        # Why Shift by 4
+        # 00000101 << 4 = 00001010000
+        # size = 00000000010
+        # OR    00001010000
+        # -----------------
+        #     00001010010  (82)
+
+
+        size |= (c & 0x7f) << shift # 0x7f = 01111111
         shift += 7
 
  
@@ -329,8 +339,7 @@ def main():
             f.write("ref: refs/heads/main\n")
         print("Initialized git directory")  
 
-
-        repo_url = "https://github.com/NesaraRahal/git-from-scratch"
+        repo_url = sys.argv[2]
         info_refs_url = f"{repo_url}/info/refs?service=git-upload-pack"
 
         r = requests.get(info_refs_url, headers={"User-Agent": "git/2.0"})
@@ -379,8 +388,7 @@ def main():
         body = encoded_want_line + encoded_done_line
 
 
-        upd_url = f"{repo_url}.git"   
-        upload_pack_url = f"{upd_url}/git-upload-pack" 
+        upload_pack_url = f"{repo_url}/git-upload-pack" 
 
         body = (
             encoded_want_line +
@@ -449,6 +457,37 @@ def main():
         #Parsing object header
         obj_type, size, offset = read_object_header(offset, header_data)
         print(obj_type, size, offset)
+
+        if obj_type == 1:
+            type_name = "commit"
+        elif obj_type == 2:
+            type_name = "tree"
+        elif obj_type == 3:
+            type_name = "blob"
+        else:
+            type_name = f"unknown({obj_type})"
+
+        print(type_name)
+
+        #Reading the object
+
+        decompressor = zlib.decompressobj()
+        object_body = decompressor.decompress(header_data[offset:])
+
+        
+        #Move offset for next obj
+        consumed_bytes = len(header_data[offset:]) - len(decompressor.unused_data)
+        offset += consumed_bytes
+
+        #Build git objects
+        obj_header = f"{type_name} {size}\0".encode()
+        full_obj = obj_header + object_body
+
+        print(full_obj)
+
+        #Store this git object
+
+
         
     else:   
         raise RuntimeError(f"Unknown command #{command}")
